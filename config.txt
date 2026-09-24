@@ -5,3 +5,5 @@ Retries: 5
 Language: EN
 Database: PostgreSQL
 UI: Tailwind
+
+Server: NodeJS
