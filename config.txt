@@ -1,0 +1,4 @@
+App Settings:
+Theme: Light
+Timeout: 30s
+Retries: 3
