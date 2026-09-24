@@ -1,4 +1,5 @@
 App Settings:
-Theme: Light
+Theme: Dark
 Timeout: 30s
 Retries: 3
+Language: EN
