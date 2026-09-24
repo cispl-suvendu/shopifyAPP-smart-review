@@ -24,7 +24,7 @@ export default async function handleRequest(
         [callbackName]: () => {
           const body = new PassThrough();
           const stream = createReadableStreamFromReadable(body);
-
+          // Respond with the appropriate content type for HTML
           responseHeaders.set("Content-Type", "text/html");
           resolve(
             new Response(stream, {
