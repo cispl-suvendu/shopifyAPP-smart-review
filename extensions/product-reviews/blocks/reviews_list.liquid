@@ -1,0 +1,156 @@
+<div class="smart-reviews-wrapper" style="margin-top: 40px; font-family: inherit;">
+  
+  <!-- ================= SUBMIT REVIEW FORM ================= -->
+  <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; margin-bottom: 30px; background: #fafafa;">
+    <h3 style="margin-top: 0; margin-bottom: 16px;">Write a Customer Review</h3>
+    
+    <form id="smart-review-form">
+      <input type="hidden" id="review-product-id" value="gid://shopify/Product/{{ product.id }}">
+
+      <div style="margin-bottom: 12px;">
+        <label for="review-name" style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 4px;">Your Name</label>
+        <input type="text" id="review-name" placeholder="Jane Doe" required style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <label for="review-rating" style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 4px;">Rating</label>
+        <select id="review-rating" required style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; background: #fff;">
+          <option value="5">★★★★★ (5 Stars)</option>
+          <option value="4">★★★★☆ (4 Stars)</option>
+          <option value="3">★★★☆☆ (3 Stars)</option>
+          <option value="2">★★☆☆☆ (2 Stars)</option>
+          <option value="1">★☆☆☆☆ (1 Star)</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <label for="review-title" style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 4px;">Review Title</label>
+        <input type="text" id="review-title" placeholder="Great quality, highly recommend!" required style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label for="review-body" style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 4px;">Review Body</label>
+        <textarea id="review-body" rows="4" placeholder="Tell other customers about your experience..." required style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;"></textarea>
+      </div>
+
+      <button type="submit" id="submit-review-btn" style="background: #111827; color: #ffffff; padding: 10px 20px; font-size: 14px; font-weight: 600; border: none; border-radius: 4px; cursor: pointer;">
+        Submit Review
+      </button>
+
+      <div id="review-status-message" style="margin-top: 12px; font-size: 14px; display: none;"></div>
+    </form>
+  </div>
+
+  <!-- ================= REVIEWS LIST ================= -->
+  <div id="smart-reviews-container">
+    <h3>Customer Reviews</h3>
+    <div id="smart-reviews-list">Loading reviews...</div>
+  </div>
+
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const productId = "gid://shopify/Product/{{ product.id }}";
+    const listContainer = document.getElementById("smart-reviews-list");
+    const reviewForm = document.getElementById("smart-review-form");
+    const statusMsg = document.getElementById("review-status-message");
+    const submitBtn = document.getElementById("submit-review-btn");
+
+    // Helper function to fetch and display reviews
+    function loadReviews() {
+      fetch(`/apps/smart-reviews/reviews?productId=${encodeURIComponent(productId)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.success || !data.reviews || data.reviews.length === 0) {
+            listContainer.innerHTML = "<p style='color: #64748b;'>No reviews yet. Be the first to write one!</p>";
+            return;
+          }
+
+          listContainer.innerHTML = data.reviews
+            .map((review) => `
+              <div style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; margin-bottom: 12px; background: #fff;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <strong style="font-size: 16px;">${escapeHtml(review.title)}</strong>
+                  <span style="color: #f59e0b; font-size: 14px;">${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}</span>
+                </div>
+                <p style="margin: 0 0 8px 0; color: #334155; font-size: 14px;">${escapeHtml(review.body)}</p>
+                <small style="color: #64748b; font-size: 12px;">By ${escapeHtml(review.customerName)} on ${new Date(review.createdAt).toLocaleDateString()}</small>
+              </div>
+            `)
+            .join("");
+        })
+        .catch((err) => {
+          console.error("Error loading reviews:", err);
+          listContainer.innerHTML = "<p style='color: #ef4444;'>Failed to load reviews.</p>";
+        });
+    }
+
+    // Helper to prevent XSS injection in user submitted text
+    function escapeHtml(str) {
+      if (!str) return "";
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // Initial fetch on page load
+    loadReviews();
+
+    // Handle Review Form Submission
+    reviewForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting...";
+      statusMsg.style.display = "none";
+
+      const payload = {
+        productId: document.getElementById("review-product-id").value,
+        customerName: document.getElementById("review-name").value,
+        rating: document.getElementById("review-rating").value,
+        title: document.getElementById("review-title").value,
+        body: document.getElementById("review-body").value,
+      };
+
+      fetch("/apps/smart-reviews/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then((res) => res.json())
+        .then((result) => {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Submit Review";
+
+          if (result.success) {
+            statusMsg.style.display = "block";
+            statusMsg.style.color = "#16a34a";
+            statusMsg.textContent = "Thank you! Your review has been submitted successfully.";
+            reviewForm.reset();
+            // Refresh reviews list immediately
+            loadReviews();
+          } else {
+            statusMsg.style.display = "block";
+            statusMsg.style.color = "#ef4444";
+            statusMsg.textContent = result.error || "Failed to submit review.";
+          }
+        })
+        .catch((err) => {
+          console.error("Submission error:", err);
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Submit Review";
+          statusMsg.style.display = "block";
+          statusMsg.style.color = "#ef4444";
+          statusMsg.textContent = "An error occurred while submitting your review.";
+        });
+    });
+  });
+</script>
+
+{% schema %}
+{
+  "name": "Reviews List",
+  "target": "section",
+  "templates": ["product"],
+  "settings": []
+}
+{% endschema %}
