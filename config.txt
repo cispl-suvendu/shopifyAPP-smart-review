@@ -1,4 +1,5 @@
 App Settings:
 Theme: Light
-Timeout: 30s
-Retries: 3
+Timeout: 60s
+Retries: 5
+Database: PostgreSQL
