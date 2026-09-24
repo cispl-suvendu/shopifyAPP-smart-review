@@ -1,5 +1,12 @@
 App Settings:
+<<<<<<< HEAD
 Theme: Dark
 Timeout: 30s
 Retries: 3
 Language: EN
+=======
+Theme: Light
+Timeout: 60s
+Retries: 5
+Database: PostgreSQL
+>>>>>>> backend
